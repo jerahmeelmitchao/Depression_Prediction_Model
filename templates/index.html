@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Depression Prediction - Multi Step</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f7f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 40px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        form {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 480px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+            border: 1.8px solid #ddd;
+            border-radius: 5px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 5px rgba(41, 128, 185, 0.4);
+        }
+
+        input[type="submit"] {
+            background-color: #2980b9;
+            color: white;
+            padding: 12px 0;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #1c5980;
+        }
+
+        /* Multi-step form styles */
+        .tab {
+            display: none;
+        }
+
+        .step {
+            height: 15px;
+            width: 15px;
+            margin: 0 4px;
+            background-color: #ccc;
+            border: none;
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.5;
+            cursor: default;
+            transition: background-color 0.3s ease;
+        }
+
+        .step.active {
+            opacity: 1;
+            background-color: #2980b9;
+        }
+
+        .step.finish {
+            background-color: #27ae60;
+        }
+
+        .button-container {
+            overflow: auto;
+            margin-top: 10px;
+        }
+
+        .button-container button {
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-container button:hover {
+            background-color: #1c5980;
+        }
+
+        .button-container #prevBtn {
+            background-color: #bbb;
+            color: #444;
+        }
+
+        .button-container #prevBtn:hover {
+            background-color: #999;
+        }
+
+        input.invalid,
+        select.invalid {
+            border-color: #e74c3c;
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.6);
+        }
+
+        h3 {
+            margin-top: 25px;
+            text-align: center;
+            /* color: #ae2727; */
+            font-weight: 700;
+        }
+
+        /* Loading message style */
+        #loadingMessage {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            color: #2980b9;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <form id="regForm" action="/predict" method="post">
+        <h2>Depression Predictor</h2>
+
+        {% set dropdown_options = {
+        "Gender": {"Male":0, "Female":1, "Other":2},
+        "City": {
+        "Visakhapatnam":0,"Kalyan":1,"Srinagar":2,"Varanasi":3,"Jaipur":4,"Pune":5,"Thane":6,"Chennai":7,
+        "Nagpur":8,"Nashik":9,"Vadodara":10,"Rajkot":11,"Kolkata":12,"Bangalore":13,"Ahmedabad":14,"Indore":15,
+        "Surat":16,"Bhopal":17,"Meerut":18,"Agra":19,"Ghaziabad":20,"Lucknow":21,"Hyderabad":22,"Ludhiana":23,
+        "Kanpur":24,"Patna":25,"Faridabad":26,"Vasai-Virar":27,"Delhi":28,"Mumbai":29
+        },
+        "Profession": {
+        "Student":0,"Civil Engineer":1,"Architect":2,"UX/UI Designer":3,"Digital Marketer":4,
+        "Content Writer":5,"Educational Consultant":6,"Teacher":7,"Manager":8,"Chef":9,"Doctor":10,
+        "Lawyer":11,"Entrepreneur":12,"Pharmacist":13
+        },
+        "Sleep Duration": {
+        "5-6 hours":0,"Less than 5 hours":1,"7-8 hours":2,"More than 8 hours":3,"Others":4
+        },
+        "Dietary Habits": {"Unhealthy":0,"Moderate":1,"Healthy":2},
+        "Degree": {
+        "B.Pharm":0,"BSc":1,"BA":2,"BCA":3,"M.Tech":4,"PhD":5,"Class 12":6,"B.Ed":7,"LLB":8,"BE":9,"M.Ed":10,
+        "MSc":11,"BHM":12,"M.Pharm":13,"MCA":14,"MA":15,"B.Com":16,"MD":17,"MBA":18,"MBBS":19,"M.Com":20,
+        "B.Arch":21,"LLM":22,"B.Tech":23,"BBA":24,"ME":25,"MHM":26,"Others":27
+        },
+        "Suicidal thoughts": {"No":0,"Yes":1},
+        "Family History of Mental Illness": {"No":0,"Yes":1}
+        } %}
+
+        {% set tab_features = [
+        ["Age", "Gender", "City"],
+        ["Academic Pressure", "CGPA", "Study Satisfaction", "Sleep Duration"],
+        ["Dietary Habits", "Degree", "Suicidal thoughts"],
+        ["Work/Study Hours", "Financial Stress", "Family History of Mental Illness", "Profession"]
+        ] %}
+
+        {% for tab in tab_features %}
+        <div class="tab">
+            {% for feature in tab %}
+            <label for="{{ feature|replace(' ', '_') }}">{{ feature }}:</label>
+            {% if feature in dropdown_options %}
+            <select id="{{ feature|replace(' ', '_') }}" name="{{ feature }}" required>
+                <option value="" disabled selected>Select {{ feature }}</option>
+                {% for label, val in dropdown_options[feature].items() %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            {% elif feature in ['Age', 'CGPA', 'Work/Study Hours', 'Sleep Duration', 'Academic Pressure', 'Financial
+            Stress'] %}
+            <input id="{{ feature|replace(' ', '_') }}" type="number" step="any" name="{{ feature }}" required>
+            {% else %}
+            <input id="{{ feature|replace(' ', '_') }}" type="text" name="{{ feature }}" required>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="button-container">
+            <button type="button" id="prevBtn" onclick="nextPrev(-1)">Previous</button>
+            <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>
+            <input type="submit" id="submitBtn" style="display:none;" value="Predict" />
+        </div>
+
+        <!-- Loading message -->
+        <div id="loadingMessage">Loading...</div>
+
+        <!-- Circles which indicates the steps of the form: -->
+        <div style="text-align:center;margin-top:20px;">
+            {% for _ in tab_features %}
+            <span class="step"></span>
+            {% endfor %}
+        </div>
+
+        {% if prediction_text %}
+        <h3>{{ prediction_text }}</h3>
+        {% endif %}
+    </form>
+
+    <script>
+        var currentTab = 0;
+        showTab(currentTab);
+
+        function showTab(n) {
+            var tabs = document.getElementsByClassName("tab");
+            tabs[n].style.display = "block";
+
+            if (n == 0) {
+                document.getElementById("prevBtn").style.display = "none";
+            } else {
+                document.getElementById("prevBtn").style.display = "inline";
+            }
+
+            if (n == (tabs.length - 1)) {
+                document.getElementById("nextBtn").style.display = "none";
+                document.getElementById("submitBtn").style.display = "inline";
+            } else {
+                document.getElementById("nextBtn").style.display = "inline";
+                document.getElementById("submitBtn").style.display = "none";
+            }
+
+            fixStepIndicator(n);
+        }
+
+        function nextPrev(n) {
+            var tabs = document.getElementsByClassName("tab");
+
+            if (n == 1 && !validateForm()) return false;
+
+            tabs[currentTab].style.display = "none";
+            currentTab = currentTab + n;
+
+            if (currentTab >= tabs.length) {
+                document.getElementById("regForm").submit();
+                return false;
+            }
+
+            showTab(currentTab);
+        }
+
+        function validateForm() {
+            var valid = true;
+            var tabs = document.getElementsByClassName("tab");
+            var inputs = tabs[currentTab].getElementsByTagName("input");
+            var selects = tabs[currentTab].getElementsByTagName("select");
+
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].value == "") {
+                    inputs[i].className += " invalid";
+                    valid = false;
+                } else {
+                    inputs[i].className = inputs[i].className.replace(" invalid", "");
+                }
+            }
+
+            for (var i = 0; i < selects.length; i++) {
+                if (selects[i].value == "") {
+                    selects[i].className += " invalid";
+                    valid = false;
+                } else {
+                    selects[i].className = selects[i].className.replace(" invalid", "");
+                }
+            }
+
+            if (valid) {
+                document.getElementsByClassName("step")[currentTab].className += " finish";
+            }
+
+            return valid;
+        }
+
+        function fixStepIndicator(n) {
+            var steps = document.getElementsByClassName("step");
+
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].className = steps[i].className.replace(" active", "");
+            }
+
+            steps[n].className += " active";
+        }
+
+        // Show loading message when submitting
+        document.getElementById("regForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // prevent immediate form submit
+
+            // Show loading message and disable submit button
+            document.getElementById("loadingMessage").style.display = "block";
+            document.getElementById("submitBtn").disabled = true;
+
+            // Wait 3 seconds then submit form
+            setTimeout(() => {
+                this.submit();
+            }, 3000);
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Select the prediction result element
+            var prediction = document.querySelector("form h3");
+
+            if (prediction) {
+                // Remove it after 3 seconds
+                setTimeout(function () {
+                    prediction.remove();
+                }, 7000);
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
